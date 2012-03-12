@@ -1,0 +1,1 @@
+Depends on Android-SDK 15+, Android NDK (6b), and Cocos2d-X. For Android, set your paths in /android/build_native.sh in order to compile necessary files.
