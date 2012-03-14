@@ -1,4 +1,26 @@
-{
-	"name": "chris",
-	"data": ["hello", {"foo": "bar"}]
-}
+[
+   {
+      "moveBgVertically":0,
+      "moveBgHorizontally":0,
+      "zoomFactor":1,
+      "duration":2
+   },
+   {
+      "moveBgVertically":-685,
+      "moveBgHorizontally":-73,
+      "zoomFactor":1.25,
+      "duration":2
+   },
+   {
+      "moveBgVertically":-1374,
+      "moveBgHorizontally":-239,
+      "zoomFactor":1.7,
+      "duration":2
+   },
+   {
+      "moveBgVertically":-354,
+      "moveBgHorizontally":-142,
+      "zoomFactor":0.95,
+      "duration":2
+   }
+]

@@ -7,8 +7,16 @@
 #include <fstream>
 #include "HelloWorldScene.h"
 
-using namespace std;
+int stageTracker;
 
+enum {
+	kTagMenu = 1,
+	kTagBgSprite = 2,
+};
+
+#define MENU_FONT_COLOR ccc3(32,32,64)
+
+// cc2d namespace
 USING_NS_CC;
 
 CCScene* HelloWorld::scene()
@@ -35,6 +43,7 @@ bool HelloWorld::init()
 	{
 		return false;
 	}
+  stageTracker = 0;
 
 	/////////////////////////////
 	// 2. add a menu item with "X" image, which is clicked to quit the program
@@ -57,75 +66,132 @@ bool HelloWorld::init()
 	// 3. add your codes below...
 	//////////////////////////////
 	
-	//
-  // CC2D-X Style File Reading - Need to add headers for IOS, etc. See 
-  // 
-  // std::string textFileName = "story.json";
-  // textFileName = CCFileUtils::fullPathFromRelativePath(textFileName.c_str());
-  // 
-  // CCFileData data(textFileName.c_str(), "r");//r parametr depend on file type and operation - http://www.cplusplus.com/reference/clibrary/cstdio/fopen/
-  // unsigned long nSize = data.getSize();
-  // unsigned char* pBuffer = data.getBuffer();
-  // 
-  // bool parsedSuccess = reader.parse(pBuffer, root, false);
   //
-  // if (!parsedSuccess) {
-  //   CCLog("JSON Parsing Failure");  
-  // }
+  // Setup menu
+  //
+  CCMenuItemFont* prevStage = CCMenuItemFont::itemFromString ("Prev", this, menu_selector(HelloWorld::prevStage) );
+  CCMenuItemFont* nextStage = CCMenuItemFont::itemFromString ("Next", this, menu_selector(HelloWorld::nextStage) );
 
-  string json_example = "{\"array\":[\"item1\", \"item2\"], \"title\":\"Cocos2d-X... Meet JSON\"}";
-
-  // Let's parse it    
-  Json::Value root;
-  Json::Reader reader;
-
-  bool parsedSuccess = reader.parse(json_example, root, false);
-
-  if ( !parsedSuccess ){
-     // report to the user the failure and their locations in the document.
-    CCLog("Failed to parse JSON");
-    return 1;
-  }
-
-  // Let's extract the array that is contained inside the root object
-  const Json::Value array = root["array"];
-
-  // And print its values
-  for ( int index = 0; index < array.size(); ++index ){  // Iterates over the sequence elements.
-    CCLog("Element in array: %s", array[index].asString().c_str());
-  }
+  prevStage->setColor(MENU_FONT_COLOR);
+  nextStage->setColor(MENU_FONT_COLOR);
   
-  // Grab the title 
-  std::string title = root["title"].asString();
-  CCLog("TITLE: %s", title.c_str());
+  CCMenu* menu = CCMenu::menuWithItems(prevStage, nextStage, 0);
+  menu->setPosition(ccp(100,100));
+  nextStage->setPosition(ccp(100, 0));
 
-  // Pretty JSON output
-  CCLog("Json Example pretty print: %s", root.toStyledString().c_str());
 
-	// add a label pulled from our JSON file
-	// create and initialize a label
-  CCLabelTTF* pLabel = CCLabelTTF::labelWithString(title.c_str(), "Arial", 28);
-	// ask director the window size
-	CCSize size = CCDirector::sharedDirector()->getWinSize();
-
-	// position the label on the center of the screen
-	pLabel->setPosition( ccp(size.width / 2, size.height - 50) );
-
-	// add the label as a child to this layer
-	this->addChild(pLabel, 1);
-
-	// add "HelloWorld" splash screen"
-	CCSprite* pSprite = CCSprite::spriteWithFile("HelloWorld.png");
+  //
+  // Setup background sprite
+  //
+	CCSprite *bgSprite = CCSprite::spriteWithFile("background.jpg");
+  
+  // So we can access easily later
+  bgSprite->setTag(kTagBgSprite);
 
 	// position the sprite on the center of the screen
-	pSprite->setPosition( ccp(size.width/2, size.height/2) );
-
-	// add the sprite as a child to this layer
-	this->addChild(pSprite, 0);
-	
+	bgSprite->setAnchorPoint(ccp(0,0));
+  bgSprite->setScale(1.0);
+  
+	// add background node  & menu to layer
+	this->addChild(bgSprite, 0);
+  this->addChild(menu);
+  
 	return true;
 }
 
+
+//
+// JSON stream/parse
+//
+void HelloWorld::switchToStage(int stageToGoTo)
+{
+  // this JSON es no bueno - it's just a demo placeholder
+  // code to 
+  // 4 records
+  string story_json = "[\"stage:\",{\"moveBgVertically\":-751,\"moveBgHorizontally\":-51,\"zoomFactor\":1,\"duration\":2.2},\"stage:\",{\"moveBgVertically\":-1,\"moveBgHorizontally\":-116,\"zoomFactor\":1,\"duration\":2.2},\"stage:\",{\"moveBgVertically\":-751,\"moveBgHorizontally\":-131,\"zoomFactor\":1,\"duration\":2.2},\"stage:\",{\"moveBgVertically\":-685,\"moveBgHorizontally\":-78,\"zoomFactor\":1,\"duration\":2.2}]";
+
+
+  Json::Value root;
+  Json::Reader reader;
+  
+  bool parsedSuccess = reader.parse(story_json, root, false);
+  
+  if ( !parsedSuccess )
+  {
+     // report to the user the failure and their locations in the document.
+    CCLog("Failed to parse JSON");
+  } 
+  else 
+  { 
+    float xCoord     = root[stageToGoTo]["moveBgHorizontally"].asDouble(),
+          yCoord     = root[stageToGoTo]["moveBgVertically"].asDouble(),
+          duration   = root[stageToGoTo]["duration"].asDouble(),
+          zoomFactor = root[stageToGoTo]["zoomFactor"].asDouble();
+
+    CCSprite* node = (CCSprite*)getChildByTag( kTagBgSprite );
+
+    CCActionInterval*  actionMoveTo  = CCMoveTo::actionWithDuration((ccTime)duration, 
+                                               CCPointMake(xCoord, yCoord));
+                 
+    //CCActionInterval*  actionScaleTo = CCScaleTo::actionWithDuration((ccTime)duration, zoomFactor);
+                 
+    node->runAction(actionMoveTo);
+    //node->runAction(actionScaleTo);
+    CCLog("(%f, %f) duration: %f, zoomFactor: %f", yCoord, xCoord, duration, zoomFactor);
+  }
+  
+  // Value Iterator - will use this later to iterate over nodes with dynamic numbers of children i.e., zones, lines of text, etc
+  // for( Json::ValueIterator itr = root[index].begin() ; itr != root[index].end() ; itr++ ) {
+  //   const Json::Value fields = root[index][itr.key().asString()];      
+  //   CCLog("sub tree element: %s value: %s", itr.key().toStyledString().c_str(), fields.toStyledString().c_str());
+  // }
+}
+
+
+//
+// Switch to next "stage" of the page (i.e., switch paragraphs and pan/zoom to new location)
+//
+void HelloWorld::nextStage(CCObject* pSender)
+{
+  CCLog("nextStage stageTracker: %i", stageTracker);
+  // quick hack for the demo
+  if(stageTracker == 0)
+  {
+    stageTracker++;
+  }
+  else
+  {
+    stageTracker+=2;
+  }
+  
+  switchToStage(stageTracker);
+
+  #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+  	exit(0);
+  #endif
+}
+
+
+//
+// Switch to previous "stage" 
+//
+void HelloWorld::prevStage(CCObject* pSender)
+{
+  CCLog("prevStage stageTracker: %i", stageTracker);
+  if( stageTracker > 0)
+  {
+    stageTracker-=2;
+    switchToStage(stageTracker);
+  }
+  
+  #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
+  	exit(0);
+  #endif
+}
+
+//
+// Closes game
+//
 void HelloWorld::menuCloseCallback(CCObject* pSender)
 {
 	CCDirector::sharedDirector()->end();
